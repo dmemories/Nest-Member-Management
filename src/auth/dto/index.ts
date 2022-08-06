@@ -1,1 +1,1 @@
-export * from './member.dto';
+export * from './auth.dto';
