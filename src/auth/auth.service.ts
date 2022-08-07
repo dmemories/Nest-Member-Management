@@ -1,12 +1,18 @@
-import { ForbiddenException, Injectable } from "@nestjs/common";
+import { ForbiddenException, Injectable, InternalServerErrorException } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
 import * as argon from "argon2";
 import { PrismaService } from "src/prisma/prisma.service";
+import { IMember } from "src/types";
+import { getJwtLifeTime, getJwtSecret } from "src/utils/functions";
 import { SignInDto, SignUpDto } from "./dto";
 
 @Injectable()
 export class AuthService {
 
-    constructor(private prismaService: PrismaService) {}
+    constructor(
+        private prismaService: PrismaService,
+        private jwtService: JwtService
+    ) {}
 
     public async signup(dto: SignUpDto) {
         try {
@@ -42,11 +48,29 @@ export class AuthService {
                 throw new ForbiddenException("Credential incorret");
             }
 
-            const { password, createdAt, updatedAt, ...memberResponse } = member;
-            return memberResponse;
+            const token = await this.signJwtToken({
+                email: member.email,
+                nickname: member.nickname,
+                memberId: member.id
+            })
+            return { token };
         } catch (error) {
             throw error;
         }
+    }
+
+    public async signJwtToken(payload: IMember) {
+        const secret = getJwtSecret();
+        if (!secret) throw new InternalServerErrorException("Cannot sign jwt");
+
+        const token = await this.jwtService.signAsync(
+            payload,
+            {
+                secret,
+                expiresIn: getJwtLifeTime()
+            }
+        );
+        return token;
     }
 
 }
