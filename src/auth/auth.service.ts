@@ -44,7 +44,8 @@ export class AuthService {
             if (member) {
                 matchedPassword = await argon.verify(member.password, dto.password);
             }
-            if (!matchedPassword || !member) {
+
+            if (!matchedPassword) {
                 throw new ForbiddenException("Credential incorret");
             }
 
